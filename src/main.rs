@@ -108,6 +108,7 @@ fn main() {
     // Understanding References
     // References: enable you to borrow values without taking the ownership.
     // 2 types of references:- immutable reference, and mutable reference.
+    // You can either have one mutable reference or any number of immutable references.
 
     // Mutable Reference
     // Use '&' for creating a mutable reference.
@@ -386,6 +387,63 @@ fn main() {
     // }
     //
     // println!("r: {}", r);
+
+    // Vectors: They allow you to store more than one value in the same data structure that puts the values next to each other in the memory
+    // Vectors should be homogeneous
+    let _v:Vec<i32> = Vec::new();
+    println!("v: {:?}", _v);
+
+    // Macro to create a vector of numbers
+    let _the_vec:Vec<i32> = vec![1, 2, 3];
+    println!("_the_vec: {:?}", _the_vec);
+
+    let mut _the_numbers_vec: Vec<i32> = Vec::new() ;
+    _the_numbers_vec.push(5);
+    _the_numbers_vec.push(6);
+    _the_numbers_vec.push(7);
+    _the_numbers_vec.push(8);
+    _the_numbers_vec.push(9);
+    println!("_the_numbers_vec: {:?}", _the_numbers_vec);
+
+    let third_element:Option<&i32> = _the_numbers_vec.get(2); // .get() method returns an <Option> type
+    match third_element {
+        None => println!("There is no third element."),
+        Some(third) => println!("The third element is {}", third)
+    }
+
+    // UTF-8 or Strings as we say
+    // 1
+    let _s:String = "hello".to_string();
+    // 2
+    let _s:String = String::from("whatever");
+    // Mutate the variable to push to it
+    let mut _s:String = String::from("foo");
+
+    // push_str() pushes a string slice whereas push() pushes a char.
+    _s.push_str("bar");
+    // _s.push("!"); DOES NOT WORK
+    // _s.push('!'); // WORKS
+
+    println!("the value of s is {}", _s);
+
+    // If you want to combine strings, use the + operator
+    let s1:String = String::from("Hello, ");
+    let s2:String = String::from("world!");
+    let _s3:String = s1 + &s2; // note s1 has been moved here and can no longer be used
+
+    // Hash Maps
+    // Takes two arguments, 1. The type of keys, and 2. The type of values.
+    use std::collections::HashMap; // Keep it at the top of the file
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+    let team_name:String = String::from("Blue");
+    let _score:i32 = scores.get(&team_name).copied().unwrap_or(0);
+    for (key, value) in &scores {
+        println!("{}: {}", key, value);
+    }
+
+    // COURSE COMPLETED...
 }
 
 fn hello_world() {

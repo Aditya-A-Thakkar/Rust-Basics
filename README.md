@@ -4,17 +4,16 @@ This project is a collection of Rust programs and code examples, organized by ch
 
 ## Project Structure
 
-- **src/main.rs**: Entry point with comprehensive examples and explanations of Rust basics, including data types, ownership, borrowing, functions, structs, enums, error handling, collections, and more.
-- **src/bin/**: Contains separate files for each chapter or topic, such as:
-  - `main.rs`: Basic Syntax of Rust Language
-  - `chapter_1.rs`: Hello World
-  - `chapter_2.rs`: User input, random numbers, and control flow
-  - `chapter_3.rs`: Variables, types, and loops
-  - `chapter_4.rs`, `chapter_4_2.rs`: Ownership, borrowing, and references
-  - `chapter_5.rs`, `chapter_5_2.rs`: Structs and methods
-  - `chapter_10.rs`, `chapter_10_2.rs`, `chapter_10_3.rs`: Generics, traits, and lifetimes
-  - `chapter_13.rs`, `chapter_13_2.rs`: Closures and iterators
-  - `chapter_18.rs`, `chapter_18_2.rs`: Object-oriented patterns and state machines
+**src/**: Contains separate files for each chapter or topic, such as:
+- `main.rs`: Basic Syntax of Rust Language
+- `bin/chapter_1.rs`: Hello World
+- `bin/chapter_2.rs`: User input, random numbers, and control flow
+- `bin/chapter_3.rs`: Variables, types, and loops
+- `bin/chapter_4.rs`, `bin/chapter_4_2.rs`: Ownership, borrowing, and references
+- `bin/chapter_5.rs`, `bin/chapter_5_2.rs`: Structs and methods
+- `bin/chapter_10.rs`, `bin/chapter_10_2.rs`, `chapter_10_3.rs`: Generics, traits, and lifetimes
+- `bin/chapter_13.rs`, `bin/chapter_13_2.rs`: Closures and iterators
+- `bin/chapter_18.rs`, `bin/chapter_18_2.rs`: Object-oriented patterns and state machines
 
 ## How to Install Rust
 

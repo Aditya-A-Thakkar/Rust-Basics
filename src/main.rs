@@ -142,8 +142,6 @@ fn main() {
     // *_r += 26;
     // println!("_x: {}", _x);
 
-    // Basically, you can make changes before referencing x anywhere in the code.
-
     // Struct:- A data structure that allows you to group multiple fields together under one name.
     // Check line 160
     let mut account = BankAccount {
@@ -163,7 +161,6 @@ fn main() {
     println!("The value of b is {}.", b);
     b += 10; // WORKS
     println!("The value of b is {}.", b);
-
     // Constants
     let c = 1; // Variable
     const D: i32 = 2; // Constant
@@ -349,8 +346,8 @@ fn main() {
     // Error Handling Techniques
     // Approach 1
     // enum Option<T> { // Define the generic Option type
-    //     Some(T), // Represents a value None, // Represents no value
-    //     None
+    //     Some(T), // Represents a value None,
+    //     None // Represents no value
     // }
     // let result: Option<f64> = divide(10.0, 2.00);
     // match result{
@@ -442,8 +439,6 @@ fn main() {
     for (key, value) in &scores {
         println!("{}: {}", key, value);
     }
-
-    // COURSE COMPLETED...
 }
 
 fn hello_world() {

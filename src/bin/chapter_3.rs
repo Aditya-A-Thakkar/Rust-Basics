@@ -1,8 +1,12 @@
+const PQR: i32 = 1;
+static MY_STR: &str = "Hi!";
+
 fn main() {
     // Shadowing variables
     let x = 5;
     let x = x + 1;
     println!("The value of x is: {}", x);
+    const ABC: i32 = 1;
     {
         let x = x * 2;
         println!("The value of x in the inner scope is: {x}");

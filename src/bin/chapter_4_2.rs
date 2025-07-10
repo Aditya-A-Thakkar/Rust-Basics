@@ -76,13 +76,16 @@ fn main() {
 
     // Intro to lifetimes:- A reference has a lifetime, which is a range from its birth to death
     // NOTE: Permissions are returned after the end of a reference's lifetime
-    let mut my_string = String::from("hello world");
-    let s1 = &my_string;
-    let s2 = &my_string;
-    println!("s1: {}, s2: {}", *s1, *s2);
-    let s3 = &mut my_string;
+    let mut my_string = String::from("hello world"); // my_string - {R, W, O}
+    let s1 = &my_string; // my_string - {R}
+    let s2 = &my_string; // my_string - {R}
+    println!("s1: {}, s2: {}", s1, s2);
+    // my_string - {R, W, O}
+    let s3 = &mut my_string; // my_string - {}
     s3.push('!');
     println!("s3: {}", *s3);
+    // my_string - {R, W, O}
+
     // Notice that when s3 is declared, s1 and s2 have already been dropped because of their lifetime
     // Declare s3 above the println statement to see the compiler error.
 
@@ -91,22 +94,5 @@ fn main() {
     let s_ref = &s; // s -> {R}
     // drop(s); // This line is rejected by the borrow checker as s does not have the 'O' permission
     println!("{}", s_ref);
-
-
-    // Intro to the fourth permission, Flow
-    // This permission is required whenever a function uses input references, or returns an output ref.
-    // Unlike the other 3 permissions, this does not change throughout the body of the function
-    fn first(strings: &Vec<String>) -> &String {
-        let s_ref = &strings[0]; // s_ref -> {R, F}
-        s_ref // s_ref -> {R, F}
-    }
-    // This function (first) works, but the function below (first_or) doesnt, try uncommenting and see the help(ignore lifetime for now) provided in the error
-    // fn first_or(strings: &Vec<String>, default: &String) -> &String {
-    //     if strings.len() > 0 {
-    //         &strings[0] // R
-    //     } else {
-    //         default  // R
-    //     }
-    // }
 }
 // Please go to chapter_10_3 after completing this, and then continue :)

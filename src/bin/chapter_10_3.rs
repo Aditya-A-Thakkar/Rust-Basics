@@ -31,8 +31,14 @@ fn main() {
     // Lifetime Annotation
     // LIFETIME ANNOTATIONS DO *NOT* CHANGE HOW LONG ANY OF THE REFERENCES LIVE.
     // They describe the relationship between the references.
-    fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
-        if x.len() > y.len() { x } else { y }
+    fn longest<'a, 'b>(x: &'a str, y: &'a str) -> &'b str {
+        // if x.len() > y.len() {
+        //     x
+        // } else {
+        //     y
+        // }
+        let new: &'b str = "Hello";
+        new
     } // WORKS!! and gives the expected output
 
     // WORKS here

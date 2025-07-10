@@ -1,5 +1,6 @@
 struct MyLinkedList<T> {
     head: Option<Box<Node<T>>>,
+    tail: *mut Node<T>, // For O(1) append
     len: usize,
 }
 
@@ -9,17 +10,40 @@ struct Node<T> {
 }
 
 impl<T> MyLinkedList<T> {
+    // O(1) prepend
     fn prepend(&mut self, new_data: T){
         // Creating a new node
-        let mut new_node = Node{data: new_data, next: None};
+        let mut new_node = Box::new(Node{data: new_data, next: None});
+        let raw_ptr: *mut Node<T> = &mut *new_node;
+
+        if self.tail.is_null() {
+            self.tail = raw_ptr;
+        }
 
         // Setting `next` to the head node, and then setting self.head to None
         new_node.next = self.head.take();
 
         // Setting self.head to our new node
-        self.head = Some(Box::new(new_node));
+        self.head = Some(new_node);
 
         // Increment the length
+        self.len += 1;
+    }
+
+    // O(1) append
+    fn append(&mut self, new_data: T) {
+        let mut new_node = Box::new(Node{data: new_data, next: None});
+        let raw_ptr: *mut Node<T> = &mut *new_node;
+
+        if self.tail.is_null() {
+            self.head = Some(new_node);
+        } else {
+            unsafe {
+                (*self.tail).next = Some(new_node);
+            }
+        }
+
+        self.tail = raw_ptr;
         self.len += 1;
     }
 
@@ -30,10 +54,17 @@ impl<T> MyLinkedList<T> {
         // There is no node before the head node, so initialized pre_node with None
         let mut prev_node = None;
 
+        self.tail = std::ptr::null_mut();
+
         // while current_node is not None, let boxed_node = current_node
         while let Some(mut boxed_node) = current_node {
             // Setting next_node to the next node, and then setting next property of boxed_node to None
             let next_node = boxed_node.next.take();
+
+            if self.tail.is_null() {
+                let raw_tail: *mut Node<T> = &mut *boxed_node;
+                self.tail = raw_tail;
+            }
 
             // TO REVERSE: Change the direction of pointers
             // Setting the next field of boxed_node to previous_node
@@ -52,12 +83,17 @@ impl<T> MyLinkedList<T> {
 impl<T: Clone> MyLinkedList<T> {
     fn from_vec(arr: Vec<T>) -> Self {
         // Initializing an empty Linked List
-        let mut new_list = MyLinkedList { head: None, len: 0 };
+        let mut new_list = MyLinkedList { head: None, tail: std::ptr::null_mut(), len: 0 };
 
         // Traversing the vector from back to front
-        for i in (0..arr.len()).rev() {
-            // Prepending element of vec to Linked List
-            new_list.prepend(arr[i].clone());
+        // for i in (0..arr.len()).rev() {
+        //     // Prepending element of vec to Linked List
+        //     new_list.prepend(arr[i].clone());
+        // }
+
+        // Using our O(1) append
+        for val in arr {
+            new_list.append(val);
         }
 
         // Returning our new Linked List
@@ -85,6 +121,17 @@ impl<T: std::fmt::Debug> MyLinkedList<T> {
 
         // OPTIONAL: printing the length of the Linked List
         println!("Length:- {}", self.len);
+    }
+}
+
+// Optimized Drop to prevent Stack Overflow Error
+impl<T> Drop for MyLinkedList<T> {
+    fn drop(&mut self) {
+        let mut current_node = self.head.take();
+        while let Some(mut boxed_node) = current_node {
+            current_node = boxed_node.next.take();
+            // boxed_node dropped here
+        }
     }
 }
 

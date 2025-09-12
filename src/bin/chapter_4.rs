@@ -14,17 +14,10 @@ fn main() {
     println!("{q}");
 
     // Example of 3.
-    // Did I mention you can leave the variable uninitialized, but can't use them until initialized?
-    let s_out;
     {
-        let s = 1;
-        s_out = &s;
-        println!("{}", s_out);
-    } // s goes out of scope here and is dropped
-
-    // Compiler rejects the below line:-
-    // println!("{s_out}");
-    // PROBLEM: s is dropped, and s_out points to freed memory, which is undefined behaviour
+        let s = String::from("Hello");
+        println!("{}", s);
+    } // s goes out of scope here and is dropped. This will free up the string from the heap. 
 
     // Let us look at the rule number 2
     // Move:- transfer of ownership of a value from a variable to other variable / argument

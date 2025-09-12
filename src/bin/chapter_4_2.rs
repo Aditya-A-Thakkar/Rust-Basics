@@ -13,10 +13,12 @@ fn main() {
     }
 
     // Variables cannot be used after being moved.
-    // The function greet takes the ownership of the values of m1, and m2, hence they cannot be used.
+    // The function greet takes the ownership of the values of m1, and m2, hence they cannot be used after the
+    // call below. However, we can use m1_again and m2_again after the call.
     let (m1_again, m2_again) = greet(m1, m2);
 
-    // Here, m1_again and m2_again are borrowed, and they are not moved into this new function
+    // Here, m1_again and m2_again are borrowed, and they are not moved into this new function.
+    // So, they remain accessible after the call.
     greet_with_references(&m1_again, &m2_again); // Note the '&'
 
     // Mutable references:- They provide 'unique', 'non-owning' access to data

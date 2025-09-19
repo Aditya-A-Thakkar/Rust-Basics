@@ -33,7 +33,9 @@ fn main() {
     let x :Box<i32> = Box::new(-1); // x is a pointer on stack to the Box on heap (all variables live in stack)
     let x_abs1 = i32::abs(*x); // Explicit dereference
     let x_abs2 = x.abs(); // Implicit deference
-    assert_eq!(x_abs1, x_abs2); // This macro panics is the two values given to it are not equal
+    assert_eq!(x_abs1, x_abs2); // This macro panics if the two values given to it are not equal
+
+    // TODO add  a simple example of a reference to a reference
 
     let r: &Box<i32> = &x;
     let r_abs1 = i32::abs(**r); // explicit dereference (twice)
@@ -42,7 +44,8 @@ fn main() {
 
     let s = String::from("Hello");
     let s_len1 = str::len(&s); // explicit reference
-    let s_len2 = s.len(); // implicit reference
+    let s_len2 = s.len(); // Implicit reference. The "." operator always creates a reference, to pass to the method. Depending on the type of the base variable 's' and the expected type of the parameter,
+    // '.' could insert ampersands or stars automatically in front of the base variable. In this case &s would be passed.
     assert_eq!(s_len1, s_len2);
 
     // Rust avoids simultaneous aliasing and mutation (Pointer Safety Principle)
@@ -54,16 +57,28 @@ fn main() {
     // RUST avoids simultaneous aliasing and mutation
     let mut v2: Vec<i32> = vec![1, 2, 3];
     let num: &i32 = &v2[2];
-    // v.push(4); // NOT ALLOWED (WHY?)
+    // v2.push(4); // NOT ALLOWED (WHY?)
     println!("Third element is {}", *num);
     v2.push(4); // ALLOWED (WHY?)
+    // TODO instead of accessing via the variable v2 (which will come later), maybe better to show simultaneous use of immutable and mutable references
 
     // Reference change permissions
-    // The idea behind the Borrow Checker is that any variable has 3 permissions
+    // The idea behind the Borrow Checker is that any place (including variables) has 3 permissions
     // 1. Read(R), 2. Write(W), 3. Own(O), [4. Flow(F)]
     let mut v3 = vec![1, 2, 3]; // v -> {R, W, O}
     let num = &v3[2]; // v -> {R}, referencing removed the write and own permission from v, you cannot change/own v until num dies
     println!("num: {}", num);
+
+    struct Sample2 {fl:i32}
+    struct Sample1 {gl:Sample2, kl:i32}
+
+    let  mut v = Sample1{gl:Sample2{fl:0}, kl:1};
+    let rf = &mut v.gl.fl;
+    println!("v.kl is {}", v.kl);
+    // v = Sample { fl: 5 };
+    println!("{rf}");
+
+
 
     let mut v4: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
     let num: &mut i32 = &mut v4[2]; // v -> {}, num -> {R, O}, *num -> {R, W}, referencing removed all the permissions on v

@@ -35,7 +35,10 @@ fn main() {
     let x_abs2 = x.abs(); // Implicit deference
     assert_eq!(x_abs1, x_abs2); // This macro panics if the two values given to it are not equal
 
-    // TODO add  a simple example of a reference to a reference
+    // A simple example of a reference to a reference
+    let my_num :i32 = 5;
+    let my_ref :&i32 = &my_num;
+    let ref_to_ref :&&i32 = &my_ref;
 
     let r: &Box<i32> = &x;
     let r_abs1 = i32::abs(**r); // explicit dereference (twice)
@@ -55,12 +58,10 @@ fn main() {
     // But NOT both at the same time.
 
     // RUST avoids simultaneous aliasing and mutation
-    let mut v2: Vec<i32> = vec![1, 2, 3];
-    let num: &i32 = &v2[2];
-    // v2.push(4); // NOT ALLOWED (WHY?)
-    println!("Third element is {}", *num);
-    v2.push(4); // ALLOWED (WHY?)
-    // TODO instead of accessing via the variable v2 (which will come later), maybe better to show simultaneous use of immutable and mutable references
+    let mut answer = String::from("Hello");
+    let ans_ref = &answer;
+    // answer.push_str(" world"); // NOT ALLOWED
+    println!("{}", ans_ref);
 
     // Reference change permissions
     // The idea behind the Borrow Checker is that any place (including variables) has 3 permissions
@@ -69,19 +70,36 @@ fn main() {
     let num = &v3[2]; // v -> {R}, referencing removed the write and own permission from v, you cannot change/own v until num dies
     println!("num: {}", num);
 
-    struct Sample2 {fl:i32}
+    // TODO: Change Debug to Display.
+    #[derive(Debug)]
+    struct Sample2 {fl:i32, hl:i32}
+    #[derive(Debug)]
     struct Sample1 {gl:Sample2, kl:i32}
 
-    let  mut v = Sample1{gl:Sample2{fl:0}, kl:1};
-    let rf = &mut v.gl.fl;
-    println!("v.kl is {}", v.kl);
-    // v = Sample { fl: 5 };
-    println!("{rf}");
+    let  mut v = Sample1{gl:Sample2{fl:0,hl:3}, kl:1};
+    let rf = &mut v.gl.fl; // Prefixes are v.gl and v
+    // v -> {}, v.gl -> {}, v.gl.fl -> {}, v.kl -> {R, W}
+    // println!("v.gl is : {:?}", v.gl); // NOT ALLOWED
+    let hf = &mut v.gl.hl;
+    println!("v.kl is {:?}", v.kl);
+    v.kl = 2;
+    println!("v.kl is {:?}", v.kl);
+    println!("rf = {rf:?}");
+
+    // If the struct is thought of as a tree, and a mutable reference to a node is taken,
+    // then you cannot take any ref either to the prefixes or to the descendants
+    // (you also lose R,W permissions).
+
+    // Explanation:- Parents aren't allowed to be referred because they can be used to
+    // descend to the current node and mutate/read it. Siblings do not have any effect on the
+    // current node and the current node has no effect on the siblings, and hence
+    // mutation/reading can be allowed to them.
 
 
-
+    // Similar to previous one, can think of this as a tree,
+    // TODO: To which node/(descendant under v4) it actually takes mutable ref?
     let mut v4: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
-    let num: &mut i32 = &mut v4[2]; // v -> {}, num -> {R, O}, *num -> {R, W}, referencing removed all the permissions on v
+    let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, O}, *num -> {R, W}, referencing removed all the permissions on v
     *num += 1;
 
     // The Borrow Checker finds permission violations

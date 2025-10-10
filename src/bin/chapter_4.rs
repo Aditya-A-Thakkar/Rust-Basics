@@ -3,7 +3,7 @@ fn main() {
     Ownership Rules:-
     1. Each value in Rust has an owner [may not be really true, see "s2 = s1" example below.]
     2. There can be only one owner of a value at a time.
-    3. When the owner goes out of scope, the value is dropped.
+    3. When the owner goes out of scope, the value is dropped by the compiler. This is the main reason why the notion of ownership exists!
      */
 
     // Example of Rule 1 and 2

@@ -97,10 +97,17 @@ fn main() {
 
 
     // Similar to previous one, can think of this as a tree,
-    // TODO: To which node/(descendant under v4) it actually takes mutable ref?
     let mut v4: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
-    let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, O}, *num -> {R, W}, referencing removed all the permissions on v
+    let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, O}, *num -> {R, W}, referencing removed all the permissions on v4
+    // taking a reference to a vector element results in calling the method 'index' or 'index_mut', which take a reference
+    // to the outermost Vec struct itself.
     *num += 1;
+    // A fall out of the above restriction is that if you have an immutable reference  to a vector element, the vector
+    // itself becomes inaccessible for writing. The reason they do this is that by calling the push method etc. one can 
+    // end up re-allocating the buffer in heap and hence updating the raw pointer inside the struct that points to this buffer. 
+    // Or if you try to re-assign v4 entirely, the compiler would want to call the drop() method on the struct,
+    // which would in turn want to de-allocate the heap buffer. Similarly, if we have  a mutable reference to an element of the vector,
+    // no further reading of the vector is allowed while the reference is live.
 
     // The Borrow Checker finds permission violations
     // This code will not compile if this is uncommented

@@ -26,7 +26,15 @@ fn main() {
     let s2 = s1;
     println!("{}, world!", s2); // WORKS
     // println!("{}, world!", s1); // DOES NOT WORK
-    // REASON: s1 has been moved into s2, and hence s1 is dropped.
+    // REASON: s1 has been moved into s2.
+    // By default structs don't have copy traits. They can only be moved. If a struct has a raw pointer within it, and one wishes to provide
+    // a COPY trait to this struct, then in the clone() method associated with this struct one should typically 
+    // make a deep copy of the buffer pointed to by the raw pointer. Otherwise, after the copy happens, if
+    // either the source or the target gets dropped, the pointer in the other one could go dangling.
+    // With move semantics, the source place loses its ownership permanently, and so the compiler
+    // would not drop its struct when the place goes out of scope (only a struct that is still owned by a place gets
+    // dropped when the place go out of scope). 
+
 
     // String addition removes ownership from the lhs variable of the + operation.
     // (RHS of + operation is a reference, which anyway does not have ownership.)

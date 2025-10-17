@@ -67,8 +67,17 @@ fn main() {
     // The idea behind the Borrow Checker is that any place (including variables) has 3 permissions
     // 1. Read(R), 2. Write(W), 3. Own(O), [4. Flow(F)]
     let mut v3 = vec![1, 2, 3]; // v -> {R, W, O}
-    let num = &v3[2]; // v -> {R}, referencing removed the write and own permission from v, you cannot change/own v until num dies
+    let num = &v3[2]; // v3 -> {R}, referencing removed the write and own permission from v3, you cannot change/move v3 until num dies
     println!("num: {}", num);
+    // If an object is moved from one place to another (like in chapter_4.rs) , the first place loses its ownership, which in fact
+    // causes a loss of all three permissions. 
+
+    // The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For
+    // if such a move was allowed, after the move, the target struct could even get dropped later. This could 
+    // cause any raw pointers in the original struct (to which references exist) to become dangling. Lack of
+    // O permission means don't allow moves. A place will get back its O permission when all references derived
+    // via the place reach the end of their lifetimes (and the compiler requires the lifetimes of references
+    // to be a subset of the lifetime of the main struct).
 
     // TODO: Change Debug to Display.
     #[derive(Debug)]
@@ -113,11 +122,11 @@ fn main() {
     // This code will not compile if this is uncommented
     let v5: Vec<i32> = vec![1, 2, 3];
     let num: &i32 = &v5[2];
-    // v5.push(4); // This line is a violation as v does not have the W permission
+    // v5.push(4); // This line is a violation as v5 does not have the W permission
     println!("Third element is {}", *num);
 
-    // Intro to lifetimes:- A reference has a lifetime, which is a range from its birth to death
-    // NOTE: Permissions are returned after the end of a reference's lifetime
+    // Intro to lifetimes:- A reference has a lifetime, which is a range from its definition to its last use. 
+    // NOTE: Permissions are returned to the primary place after the end of the reference's lifetime
     let mut my_string = String::from("hello world"); // my_string - {R, W, O}
     let s1 = &my_string; // my_string - {R}
     let s2 = &my_string; // my_string - {R}
@@ -128,13 +137,17 @@ fn main() {
     println!("s3: {}", *s3);
     // my_string - {R, W, O}
 
-    // Notice that when s3 is declared, s1 and s2 have already been dropped because of their lifetime
-    // Declare s3 above the println statement to see the compiler error.
+    // Notice that when s3 is declared, s1 and s2 are no longer live.
+    // Declare s3 above the first println statement to see the compiler error.
 
     // DATA MUST OUTLIVE ALL ITS REFERENCES
     let s = String::from("Hello world"); // s -> {R, O}
     let s_ref = &s; // s -> {R}
-    // drop(s); // This line is rejected by the borrow checker as s does not have the 'O' permission
+    // drop(s); // This explicit call to drop() is rejected by the borrow checker as s does not have the 'O' permission
+    // Note, in its implementation, the drop() function has `self` as its argument (not &self), so it basically
+    // moves the actual param value to the formal param `self'.
+    // Also, for the same reason, a function cannot return a reference to a value that is owned
+    // by a local variable of the function. 
     println!("{}", s_ref);
 }
 // Please go to chapter_10_3 after completing this, and then continue :)

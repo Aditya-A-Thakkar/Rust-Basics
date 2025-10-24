@@ -77,7 +77,10 @@ fn main() {
     // cause any raw pointers in the original struct (to which references exist) to become dangling. Lack of
     // O permission means don't allow moves. A place will get back its O permission when all references derived
     // via the place reach the end of their lifetimes (and the compiler requires the lifetimes of references
-    // to be a subset of the lifetime of the main struct).
+    // to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped,
+    // the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically
+    // moves the actual param value to the formal param `self'. In other words, a value can be dropped
+    // only when the owning place has 'O' permission. 
 
     // TODO: Change Debug to Display.
     #[derive(Debug)]

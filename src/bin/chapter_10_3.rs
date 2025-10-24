@@ -10,7 +10,11 @@ fn main() {
     }
     // println!("r: {}", r);
     // Uncomment the line above and see the compiler error
-    // REASON: x goes out of scope and is dropped, then r becomes a pointer to freed memory which is undefined behaviour
+    // REASON: x has to be dropped when it goes out of scope since x is not a reference. But if r is live after line 10,
+    // x would not have O permission, and hence would not be droppable. This can't be allowed, since every value must
+    // be dropped when its owning place goes out of scope, in order to free any memory pointed to by fields within the value.
+    // Hence, long story short, the compiler disallows a reference to a value or a part of a value to be live
+    // after the place that owns the value goes out of scope.
 
     // The Borrow Checker ensures that DATA OUTLIVES ALL ITS REFERENCES
 
@@ -26,20 +30,39 @@ fn main() {
     // Uncomment this code and see the help given in the error
     //  help: this function's return type contains a borrowed value, but the signature does not say whether it is borrowed from `x` or `y`
     //
-    // Rust cannot tell whether the reference being returned refers to x or y
+    // If the code above was allowed, there would be a problem when dealing with the call-site code, as shown
+    // below.
+
+    // let t1 = String::from("hello");
+    // let a = &t1;
+    // let t2 = String::from("hello");
+    // let b = &t2;
+    // let c = longest(a,b);
+    // Compiler would not know whether c is the same as a or b. So, it would not know
+    // whether it is t1 or t2 who still needs to have no O permission. 
+    // Note, the function cannot return any other reference in
+    // this case, since the compiler would not allow the function's code to return references to local values. 
+    // println!("{c}");
 
     // Lifetime Annotation
     // LIFETIME ANNOTATIONS DO *NOT* CHANGE HOW LONG ANY OF THE REFERENCES LIVE.
     // They describe the relationship between the references.
-    fn longest<'a, 'b>(x: &'a str, y: &'a str) -> &'b str {
-        // if x.len() > y.len() {
-        //     x
-        // } else {
-        //     y
-        // }
-        let new: &'b str = "Hello";
-        new
+    fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+         if x.len() > y.len() {
+             x
+         } else {
+             y
+         }
+         // In the call site shown above, now the compiler would assume that
+         // both t1 and t2 have live references to their values after 'longest' returns. 
+
     } // WORKS!! and gives the expected output
+
+
+    fn return_static () -> &'static str { 
+        let new: &'static str = "Hello";
+        new
+    } // static means lifetime of the reference is till the end of the program
 
     // WORKS here
     let string1 = String::from("abcd");

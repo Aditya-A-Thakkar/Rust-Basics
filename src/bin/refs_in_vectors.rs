@@ -1,19 +1,24 @@
 fn main() {
     let mut x: i32 = 22;
     let mut v: Vec<&i32> = vec![];
-    let r: &mut Vec<&i32> = &mut v;
     let p: &i32 = &x;
-    r.push(p);
-    // r.push1(p);
-    // push2(r, p);
+    v.push(p);
+    // x += 1;
+    // If you uncomment the line above, it would be an error, because
+    // the immutable reference to x is stored inside the vector v, and the vector
+    // is still accessible here.
+    take_ownership(v);
+    // we put the call above just to take away all permissions from v, thus marking v and its contents
+    // as inaccessible.
+
+    // v.push1(p);
+    // push2(v, p);
     // let mut smth = MyStruct { my_num: &1 };
     // empty(&mut smth, p);
-    x += 1;
-    take(v);
     // take(smth);
 }
 
-fn take<T>(v: T) {
+fn take_ownership<T>(v: T) {
 
 }
 

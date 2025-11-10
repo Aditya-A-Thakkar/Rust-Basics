@@ -23,26 +23,6 @@ fn main() {
     let r = &x;
     println!("r: {}", r);
 
-    // Now consider this code below
-    // fn longest(x: &str, y: &str) -> &str {
-    //     if x.len() > y.len() { x } else { y }
-    // }
-    // Uncomment this code and see the help given in the error
-    //  help: this function's return type contains a borrowed value, but the signature does not say whether it is borrowed from `x` or `y`
-    //
-    // If the code above was allowed, there would be a problem when dealing with the call-site code, as shown
-    // below.
-
-    // let t1 = String::from("hello");
-    // let a = &t1;
-    // let t2 = String::from("hello");
-    // let b = &t2;
-    // let c = longest(a,b);
-    // Compiler would not know whether c is the same as a or b. So, it would not know
-    // whether it is t1 or t2 who still needs to have no O permission. 
-    // Note, the function cannot return any other reference in
-    // this case, since the compiler would not allow the function's code to return references to local values. 
-    // println!("{c}");
 
     // Lifetime Annotation
     // LIFETIME ANNOTATIONS DO *NOT* CHANGE HOW LONG ANY OF THE REFERENCES LIVE.
@@ -53,8 +33,7 @@ fn main() {
          } else {
              y
          }
-         // In the call site shown above, now the compiler would assume that
-         // both t1 and t2 have live references to their values after 'longest' returns. 
+        
 
     } // WORKS!! and gives the expected output
 
@@ -64,7 +43,24 @@ fn main() {
         new
     } // static means lifetime of the reference is till the end of the program
 
-    // WORKS here
+    let t1 = String::from("hello");
+    let a = &t1;
+    let t2 = String::from("hello");
+    let b = &t2;
+    let c = longest(a,b);
+    // Without the lifetime annotations in the signature of longest(), the 
+    // compiler would not know whether c is the same as a or b. So, it would not know
+    // whether it is t1 or t2 who still needs to have no O permission. 
+    // With the annotations, but t1 and t2 still don't have O permission here.
+    // Will see error messages if the two lines below are uncommmented.
+    // let _t3 = t1;
+    // let _t4 = t2;
+    // Note, the function cannot return any other reference in
+    // this case, since the compiler would not allow the function's code to return references to local values. 
+    println!("{c}");
+   
+
+    // WORKS here. Nothing new here compared to what is seen above.
     let string1 = String::from("abcd");
     let string2 = "xyz";
     let result = longest(string1.as_str(), string2);
@@ -78,7 +74,6 @@ fn main() {
         println!("The longest string is {result}");
     }
 
-    // NOT HERE
     // let string1 = String::from("long string is long");
     // let result;
     // {
@@ -86,10 +81,11 @@ fn main() {
     //     result = longest(string1.as_str(), string2.as_str());
     // }
     // println!("The longest string is {result}");
-    // WHY?: DATA DOES NOT OUTLIVE ALL ITS REFERENCES
-    // string2 should be valid when result is used, but it is dropped.
+    // If you uncomment above lines it is an error, because 'result' could
+    // be the same reference as string2, and string2 is dropped after its scope ends.
 
-    // Lifetime Annotations in struct definitions
+    // Lifetime Annotations in struct definitions. The <'a> denotes the lifetime of the struct itself.
+    // So we are basically saying that the reference in the field 'part' is live as long as the struct is. 
     struct ImportantExcerpt<'a> {
         part: &'a str,
     }
@@ -100,7 +96,7 @@ fn main() {
         part: first_sentence,
     };
 
-    // Lifetime Elision
+    // Lifetime Elision under some scenarios
     // Consider this function
     fn first_word(s: &str) -> &str {
         let bytes = s.as_bytes();
@@ -113,23 +109,24 @@ fn main() {
     }
     // Compiles WITHOUT any error, without any lifetime annotations
     // WHY? The compiler uses 3 rules to infer the lifetimes of these references
-    // 1. The compiler assigns a different lifetime parameter to each lifetime in each input type
-    // 2. If there is exactly one input lifetime parameter, that lifetime is assigned to all output lifetime parameters
-    // 3. If there are multiple input lifetime parameters, but one of them is &self or &mut self because this is a method, the lifetime of self is assigned to all output lifetime parameters
+    // 1. The compiler assigns a different lifetime parameter to each reference argument
+    // 2. If there is exactly one reference argument, that lifetime is assigned to all output references
+    // 3. If there are multiple input reference arguments, but one of them is &self or &mut self (only methods of structs can have 'self' as a param), 
+    // the lifetime of self is assigned to all output references.
+    // Note, the 'longest' method needed explicit lifetime annotations because none of these implicit rules help there to infer the lifetime
+    // of the returned reference.
 
-    // Now, using rule 2, we know that the compiler sees the function first_word as
+    // Now, using Rule 2,  the compiler will treat the function first_word as
     // fn first_word<'a>(s: &'a str) -> &'a str {}
 
     // Lifetime Annotations in Method Definitions
     // Consider our struct ImportantExcerpt
     impl<'a> ImportantExcerpt<'a> {
-        fn level(&self) -> i32 {
-            3
-        }
 
         fn announce_and_return_part(&self, announcement: &str) -> &str {
             println!("Attention please: {}", announcement);
             self.part
+            // the return reference will be treated as having the lifetime of self.part following Rule 3 above
         }
     }
 
@@ -150,6 +147,7 @@ fn main() {
         y: &'a str,
         ann: T
     ) -> &'a str where T: Display {
+        // 'where' causes requires T to have the Display trait. Can also say T:Display in the first line instead of using where.
         println!("Announcement! {}", ann);
         if x.len() > y.len() { x } else { y }
     }

@@ -11,6 +11,16 @@ fn main() {
     // we put the call above just to take away all permissions from v, thus marking v and its contents
     // as inaccessible.
 
+    // Here is (our guess) regarding the general principle. If we pass two structs s1 and s2 to a function (or references to two structs s1 and s2)
+    // to a function foo(), conservatively the compiler may assume that any reference inside either struct (in a direct or transitive field)
+    // will henceforth live as long as the other struct is accessible. This is to account for  the possibility that foo could copy references found inside
+    // one struct to the fields of other struct. The compiler does not inspect the code of the functionn.
+    // However, it is not really as strict as the blanket rule above. There are various optimizations, based on the types of 
+    // fields and their (im)mutability, etc., which the compiler uses to refine its view of which references 
+    // could actually get copied. 
+    // TODO: Aditya, show some examples where the compiler thinks a reference is leaked from one struct to the other,
+    // and some other examples where some optimizations kicked in. Use structs in this examples (not library types like Vec).
+
     // v.push1(p);
     // push2(v, p);
     // let mut smth = MyStruct { my_num: &1 };

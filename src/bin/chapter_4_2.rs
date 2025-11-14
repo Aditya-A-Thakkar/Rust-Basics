@@ -75,12 +75,17 @@ fn main() {
     // The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For
     // if such a move was allowed, after the move, the target struct could even get dropped later. This could 
     // cause any raw pointers in the original struct (to which references exist) to become dangling. Lack of
-    // O permission means don't allow moves. A place will get back its O permission when all references derived
-    // via the place reach the end of their lifetimes (and the compiler requires the lifetimes of references
+    // O permission means don't allow moves. A place will get back its O permission when all references 
+    // to the place reach the end of their lifetimes (and the compiler requires the lifetimes of references
     // to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped,
     // the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically
     // moves the actual param value to the formal param `self'. In other words, a value can be dropped
     // only when the owning place has 'O' permission. 
+    
+    // Note that the compiler has to somehow conservatively track which places hold references to which other places. 
+    // This is challenging when reference variables are copied to other reference variables, etc.
+    // We do not discuss further how exactly this is done.
+    // TODO: Aditya, please insert here the example where the compiler over-approximates the notion of who refers to who.
 
     // TODO: Change Debug to Display.
     #[derive(Debug)]

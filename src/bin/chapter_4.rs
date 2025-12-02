@@ -84,7 +84,7 @@ fn main() {
     println!("{}", x);
 
     // THIS DOES NOT, due to MOVE semantics
-    let a = String::from([1,2,3]);
+    let a = String::from("hello");
     let b = a;
     // println!("{}", a); // ERROR!!!
 

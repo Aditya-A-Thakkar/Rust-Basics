@@ -21,20 +21,35 @@ fn main() {
     // Here is (our guess) regarding the general principle. If we pass two structs s1 and s2 to a function (or references to two structs s1 and s2)
     // to a function foo(), conservatively the compiler may assume that any reference inside either struct (in a direct or transitive field)
     // will henceforth live as long as the other struct is accessible. This is to account for  the possibility that foo could copy references found inside
-    // one struct to the fields of other struct. The compiler does not inspect the code of the functionn.
+    // one struct to the fields of other struct. The compiler does not inspect the code of the function.
     // However, it is not really as strict as the blanket rule above. There are various optimizations, based on the types of 
     // fields and their (im)mutability, etc., which the compiler uses to refine its view of which references 
     // could actually get copied. 
     // TODO: Aditya, show some examples where the compiler thinks a reference is leaked from one struct to the other,
     // and some other examples where some optimizations kicked in. Use structs in this examples (not library types like Vec).
+    struct Clipboard<'a> {
+        text: &'a str
+    }
 
-    
-   
+    fn copy_paste<'a>(c: &mut Clipboard<'a>, incoming: &'a str) {
+        // c.text = incoming;
+        // LEAK exists even if the above line isn't present.
+    }
+
+    // OPTIMIZATION
+    fn compare(c: &mut Clipboard, incoming: &str) {
+        // Same as:- fn compare<'a, 'b>(c: &mut Clipboard<'a>, incoming: &'b str) {}
+        println!("Comparing {} with {}", c.text, incoming);
+        // c.text = incoming; -> ERROR, 'a != 'b
+    }
 
     let mut smth = MyStruct { my_num: "hello" };
     let r = &mut smth;
-    //empty(& mut smth/*,  p*/);
+    empty(&mut smth/*,  p*/);
     // TODO: Aditya, see why it does not compile if we uncomment the call above
+    // We were forcing the borrow to MyStruct to live as long as the struct content,
+    // which led to the error. Fixed it by giving a different lifetime parameter to both
+    // the borrow to MyStruct, and MyStruct.my_num
     take_ownership(smth);
 }
 
@@ -64,7 +79,7 @@ fn push2<T>(v: &mut Vec<T>, data: T) {
     println!("Do nothing!");
 }
 
-fn empty<'a>(some_struct: &'a mut MyStruct<'a>/* , y: &'a i32*/) {
+fn empty<'a, 'b>(some_struct: &'a mut MyStruct<'b>/* , y: &'b i32*/) {
 }
 
 struct MyStruct<'a> {

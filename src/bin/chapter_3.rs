@@ -98,7 +98,7 @@ fn main() {
 
     // Loop labels ACTUALLY help
     let mut count = 0;
-    'counting_up: loop {
+    let x = 'counting_up: loop {
         println!("count = {count}");
         let mut remaining = 10;
 
@@ -108,14 +108,14 @@ fn main() {
                 break;
             }
             if count == 2 {
-                break 'counting_up;
+                break 'counting_up 3;
             }
             remaining -= 1;
         }
 
         count += 1;
-    }
-    println!("End count = {count}");
+    };
+    println!("End count = {count}, x = {}", x);
 
     // While loops
     let mut number = 3;

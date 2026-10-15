@@ -69,8 +69,7 @@ fn main() {
     let mut v3 = vec![1, 2, 3]; // v -> {R, W, O}
     let num = &v3[2]; // v3 -> {R}, referencing removed the write and own permission from v3, you cannot change/move v3 until num dies
     println!("num: {}", num);
-    // If an object is moved from one place to another (like in chapter_4.rs) , the first place loses its ownership, which in fact
-    // causes a loss of all three permissions. 
+    // If an object is moved from one place to another (like in chapter_4.rs), the first place loses all its permissions
 
     // The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For
     // if such a move was allowed, after the move, the target struct could even get dropped later. This could 
@@ -98,7 +97,12 @@ fn main() {
     // v -> {}, v.gl -> {}, v.gl.fl -> {}, v.kl -> {R, W}
     // println!("v.gl is : {:?}", v.gl); // NOT ALLOWED
     let hf = &mut v.gl.hl;
-    println!("v.kl is {:?}", v.kl);
+    /* 
+    let w = &v; // not allowed
+    println!("w.kl is {:?}", (*w).kl); 
+    */
+    println!("v.kl is {:?}", v.kl); // this is NOT considered a read of v followed by a read of v.kl. 
+                                    // One has to somehow consider it to be a direct read of the place v.kl.
     v.kl = 2;
     println!("v.kl is {:?}", v.kl);
     println!("rf = {rf:?}");

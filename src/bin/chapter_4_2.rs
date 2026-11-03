@@ -64,7 +64,9 @@ fn main() {
     println!("{}", ans_ref);
 
     // Reference change permissions
-    // The idea behind the Borrow Checker is that any place (including variables) has 3 permissions
+    // A "place" is anything that can occur on the LHS of an assignment statement. In other words, it is an l-value.
+    // Examples: v, *v, v[1], etc.
+    // The idea behind the Borrow Checker is that any place has 3 permissions
     // 1. Read(R), 2. Write(W), 3. Own(O), [4. Flow(F)]
     let mut v3 = vec![1, 2, 3]; // v -> {R, W, O}
     let num = &v3[2]; // v3 -> {R}, referencing removed the write and own permission from v3, you cannot change/move v3 until num dies
@@ -121,7 +123,7 @@ fn main() {
     let mut v4: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
     let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, O}, *num -> {R, W}, referencing removed all the permissions on v4
     // taking a reference to a vector element results in calling the method 'index' or 'index_mut', which take a reference
-    // to the outermost Vec struct itself.
+    // to the outermost Vec struct itself and keeps that reference as long as the returned reference (i.e., num) is live.
     *num += 1;
     // A fall out of the above restriction is that if you have an immutable reference  to a vector element, the vector
     // itself becomes inaccessible for writing. The reason they do this is that by calling the push method etc. one can 
@@ -130,12 +132,18 @@ fn main() {
     // which would in turn want to de-allocate the heap buffer. Similarly, if we have  a mutable reference to an element of the vector,
     // no further reading of the vector is allowed while the reference is live.
 
+
+
     // The Borrow Checker finds permission violations
     // This code will not compile if this is uncommented
     let v5: Vec<i32> = vec![1, 2, 3];
     let num: &i32 = &v5[2];
     // v5.push(4); // This line is a violation as v5 does not have the W permission
     println!("Third element is {}", *num);
+
+    let v6: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
+    let mut num = &v6[2]; // v4 -> {R}, num -> {R, W, O}, *num -> {R}
+    num = &v6[3];
 
     // Intro to lifetimes:- A reference has a lifetime, which is a range from its definition to its last use. 
     // NOTE: Permissions are returned to the primary place after the end of the reference's lifetime
@@ -151,6 +159,8 @@ fn main() {
 
     // Notice that when s3 is declared, s1 and s2 are no longer live.
     // Declare s3 above the first println statement to see the compiler error.
+
+    // Go through the non-lexical lifetimes example in the Brown Rust book. Search for fn ascii_capitalize.
 
     // DATA MUST OUTLIVE ALL ITS REFERENCES
     let s = String::from("Hello world"); // s -> {R, O}

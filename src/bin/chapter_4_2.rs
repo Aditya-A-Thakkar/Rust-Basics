@@ -1,5 +1,5 @@
 fn main() {
-    // References are non-owning pointers, and dereferencing it gives access to its data
+   
     let m1 = String::from("Hello");
     let m2 = String::from("world");
 
@@ -8,25 +8,35 @@ fn main() {
         (g1, g2)
     }
 
-    fn greet_with_references(g1: &String, g2: &String) { // Note the '&'
-        println!("{} {}!", g1, g2);
-    }
-
     // Variables cannot be used after being moved.
     // The function greet takes the ownership of the values of m1, and m2, hence they cannot be used after the
     // call below. However, we can use m1_again and m2_again after the call.
     let (m1_again, m2_again) = greet(m1, m2);
+    // println!("{}", m1); 
+    /* reference to m1 above not allowed since m1 was moved to g1 */
+    println!("{}", m1_again);
+    /* Copying values to and fro like this is both inconvenient and expensive */
 
-    // Here, m1_again and m2_again are borrowed, and they are not moved into this new function.
-    // So, they remain accessible after the call.
-    greet_with_references(&m1_again, &m2_again); // Note the '&'
+    /*  References are basically type-safe pointers.
+        A reference variable owns its (pointer) value, but not the value being pointed to. */
+    fn greet_with_references(g1: &String, g2: &String) { // Note the '&'
+        println!("{} {}!", g1, g2); // technically should have been *g1, *g2, but Rust implicitly adds *'s where necessary
+        /* g1.drop() and g2.drop() do get called, but the drop methods 
+           of references do nothing. */
+    }
+    greet_with_references(&m1_again, &m2_again); // Note the '&'. Rust does not add '&' implicitly.
 
-    // Mutable references:- They provide 'unique', 'non-owning' access to data
+
+
+    /* Mutable references:- They provide 'unique', 'non-owning' access to data */
     let mut v1: Vec<i32> = vec![1, 2, 3];
     let num: &mut i32 = &mut v1[2];
+    // println!("{}", v1[0]); 
+    /* Above line does not work, because taking a mutable reference blocks any access to the underlying data without
+       going through this reference. */
     *num += 1;
     println!("Third element is {}", *num);
-    println!("Vector is now {:?}", v1);
+    println!("Vector is now {:?}", v1); // The reference num is no longer live
 
 
     // Rust implicitly inserts dereferences and references
@@ -47,7 +57,8 @@ fn main() {
 
     let s = String::from("Hello");
     let s_len1 = str::len(&s); // explicit reference
-    let s_len2 = s.len(); // Implicit reference. The "." operator always creates a reference, to pass to the method. Depending on the type of the base variable 's' and the expected type of the parameter,
+    let s_len2 = s.len(); // Implicit reference. The "." operator always creates a reference, to pass to the method. 
+    // Depending on the type of the base variable 's' and the expected type of the parameter,
     // '.' could insert ampersands or stars automatically in front of the base variable. In this case &s would be passed.
     assert_eq!(s_len1, s_len2);
 
@@ -87,6 +98,9 @@ fn main() {
     // This is challenging when reference variables are copied to other reference variables, etc.
     // We do not discuss further how exactly this is done.
     // TODO: Aditya, please insert here the example where the compiler over-approximates the notion of who refers to who.
+
+    /* Similar to example above, we can add make an example where a mutable reference to an element of a mutable
+       vector is taken. */
 
     // TODO: Change Debug to Display.
     #[derive(Debug)]

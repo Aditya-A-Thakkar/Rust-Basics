@@ -12,8 +12,7 @@ fn main() {
     // The function greet takes the ownership of the values of m1, and m2, hence they cannot be used after the
     // call below. However, we can use m1_again and m2_again after the call.
     let (m1_again, m2_again) = greet(m1, m2);
-    // println!("{}", m1); 
-    /* reference to m1 above not allowed since m1 was moved to g1 */
+    // println!("{}", m1);  reference to m1 above not allowed since m1 was moved to g1 
     println!("{}", m1_again);
     /* Copying values to and fro like this is both inconvenient and expensive */
 
@@ -21,7 +20,7 @@ fn main() {
         A reference variable owns its (pointer) value, but not the value being pointed to. */
     fn greet_with_references(g1: &String, g2: &String) { // Note the '&'
         println!("{} {}!", g1, g2); // technically should have been *g1, *g2, but Rust implicitly adds *'s where necessary
-        /* g1.drop() and g2.drop() do get called, but the drop methods 
+        /* g1.drop() and g2.drop() do get called here, but the drop methods 
            of references do nothing. */
     }
     greet_with_references(&m1_again, &m2_again); // Note the '&'. Rust does not add '&' implicitly.
@@ -49,6 +48,7 @@ fn main() {
     let my_num :i32 = 5;
     let my_ref :&i32 = &my_num;
     let ref_to_ref :&&i32 = &my_ref;
+    println!("Expecting 5, got {}", **ref_to_ref); // the *'s can be omitted, they wil be implicitly added
 
     let r: &Box<i32> = &x;
     let r_abs1 = i32::abs(**r); // explicit dereference (twice)
@@ -62,45 +62,77 @@ fn main() {
     // '.' could insert ampersands or stars automatically in front of the base variable. In this case &s would be passed.
     assert_eq!(s_len1, s_len2);
 
-    // Rust avoids simultaneous aliasing and mutation (Pointer Safety Principle)
-    // In Rust, you can either have
-    // 1. One mutable reference, or
-    // 2. Any number of immutable references
-    // But NOT both at the same time.
+    /*
+      Rust avoids simultaneous aliasing and mutation (Pointer Safety Principle)
+      In Rust, you can either have
+        1. One mutable reference, or
+        2. Any number of immutable references
+      But NOT both at the same time. The underlying variable name (e.g., answer1 below) is also treated
+      as a reference for the purposes  of the rule mentioned above.
+    */
 
     // RUST avoids simultaneous aliasing and mutation
-    let mut answer = String::from("Hello");
-    let ans_ref = &answer;
+    let mut answer1 = String::from("Hello");
+    let ans_ref1 = &answer1;
     // answer.push_str(" world"); // NOT ALLOWED
-    println!("{}", ans_ref);
+    println!("Expecting Hello, got: {}", ans_ref1);
+    /* Cannot mutate underlying data while a reference to it is live. In this case the mutation can't actually cause a problem,
+       unless the reference is passed to another thread (in which case data races can occur between the write (i.e., push_str) in the 
+       main thread and the read via the reference in the other thread).  */
 
-    // Reference change permissions
-    // A "place" is anything that can occur on the LHS of an assignment statement. In other words, it is an l-value.
-    // Examples: v, *v, v[1], etc.
-    // The idea behind the Borrow Checker is that any place has 3 permissions
-    // 1. Read(R), 2. Write(W), 3. Own(O), [4. Flow(F)]
-    let mut v3 = vec![1, 2, 3]; // v -> {R, W, O}
-    let num = &v3[2]; // v3 -> {R}, referencing removed the write and own permission from v3, you cannot change/move v3 until num dies
-    println!("num: {}", num);
-    // If an object is moved from one place to another (like in chapter_4.rs), the first place loses all its permissions
+    let mut answer2 = String::from("Hello");
+    let ans_ref2 = &answer2;
+    let substr2 = &ans_ref2[0..2];
+    // answer.push_str(" world"); // NOT ALLOWED
+    println!("Expecting He, got: {}", substr2);   
+    /* In this example, the string-slice substr2 could become a dangling pointer in case the push_str relocates
+       the underlying string in the heap. */
 
-    // The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For
-    // if such a move was allowed, after the move, the target struct could even get dropped later. This could 
-    // cause any raw pointers in the original struct (to which references exist) to become dangling. Lack of
-    // O permission means don't allow moves. A place will get back its O permission when all references 
-    // to the place reach the end of their lifetimes (and the compiler requires the lifetimes of references
-    // to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped,
-    // the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically
-    // moves the actual param value to the formal param `self'. In other words, a value can be dropped
-    // only when the owning place has 'O' permission. 
     
-    // Note that the compiler has to somehow conservatively track which places hold references to which other places. 
-    // This is challenging when reference variables are copied to other reference variables, etc.
-    // We do not discuss further how exactly this is done.
-    // TODO: Aditya, please insert here the example where the compiler over-approximates the notion of who refers to who.
+    let mut answer3 = String::from("Hello");
+    let substr3 = &answer3[0..2];
+    let mut ans_ref3 = &mut answer3;
+    ans_ref3.push_str(" world");
+    // println!("Expecting He, got: {}", substr3); NOT ALLOWED, unless we comment out both lines above
+    /* In this example, the mutation via the mutable reference is not allowed if we uncomment the println above,
+       since, a mutable reference and an immutable reference are live together. Note, if it was allowed, substr3 could
+       become a dangling pointer due to the mutation. */
 
-    /* Similar to example above, we can add make an example where a mutable reference to an element of a mutable
-       vector is taken. */
+    /*
+      References change permissions.
+      A "place" is anything that can occur on the LHS of an assignment statement. In other words, it is an l-value.
+      Examples: v, *v, v[1], etc.
+      The idea behind the Borrow Checker is that any place has 3 permissions
+      1. Read(R), 2. Write(W), 3. Own(O), [4. Flow(F)]
+    */
+    let v3 = vec![1, 2, 3]; // v -> {R, W, O}
+    let num = &v3[2]; // v3 -> {R}, referencing removed the write and own permission from v3, you cannot mutate/move v3 until num dies
+                            // num -> {R,O}, *num -> {R}
+                            // Note, one needs W permission on v3 to be able to mutate any element of v3. How this permission check happens
+                            // will be discussed later.
+    // let _v3a = v3; NOT ALLOWED, since reference num (which is treated as a reference to v3 itself, reason to be discussed later), is live
+    println!("num: {}", num);
+    // If an object is moved from one place to another by a copy statement, (like in chapter_4.rs), the source place loses all its permissions
+
+    /*
+      The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For
+      if such a move was allowed, after the move, the target struct (after the move) could get mutated or even get dropped later. 
+      This could 
+      cause any raw pointers in the original struct (to which references exist) to become dangling. Lack of
+      O permission means don't allow to be moved to another place. A place will get back its O permission when all references 
+      to the place (or to other locations reachable from the place) reach the end of their lifetimes (and the compiler requires the lifetimes of references
+      to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped,
+      the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically
+      moves the actual param value to the formal param `self'. In other words, a value can be dropped
+      only when the owning place has 'O' permission. 
+    */
+    
+    /*
+      Note that the compiler has to somehow conservatively track which places hold references to which other places. 
+      This is challenging when reference variables are copied to other reference variables, etc.
+      We do not discuss further how exactly this is done.
+    */
+    
 
     // TODO: Change Debug to Display.
     #[derive(Debug)]
@@ -157,7 +189,7 @@ fn main() {
 
     let v6: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
     let mut num = &v6[2]; // v4 -> {R}, num -> {R, W, O}, *num -> {R}
-    num = &v6[3];
+    num = &v6[2];
 
     // Intro to lifetimes:- A reference has a lifetime, which is a range from its definition to its last use. 
     // NOTE: Permissions are returned to the primary place after the end of the reference's lifetime

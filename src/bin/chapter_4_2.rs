@@ -1,5 +1,4 @@
 fn main() {
-   
     let m1 = String::from("Hello");
     let m2 = String::from("world");
 
@@ -12,42 +11,40 @@ fn main() {
     // The function greet takes the ownership of the values of m1, and m2, hence they cannot be used after the
     // call below. However, we can use m1_again and m2_again after the call.
     let (m1_again, m2_again) = greet(m1, m2);
-    // println!("{}", m1);  reference to m1 above not allowed since m1 was moved to g1 
+    // println!("{}", m1);  reference to m1 above not allowed since m1 was moved to g1
     println!("{}", m1_again);
     /* Copying values to and fro like this is both inconvenient and expensive */
 
     /*  References are basically type-safe pointers.
-        A reference variable owns its (pointer) value, but not the value being pointed to. */
-    fn greet_with_references(g1: &String, g2: &String) { // Note the '&'
+    A reference variable owns its (pointer) value, but not the value being pointed to. */
+    fn greet_with_references(g1: &String, g2: &String) {
+        // Note the '&'
         println!("{} {}!", g1, g2); // technically should have been *g1, *g2, but Rust implicitly adds *'s where necessary
-        /* g1.drop() and g2.drop() do get called here, but the drop methods 
-           of references do nothing. */
+                                    /* g1.drop() and g2.drop() do get called here, but the drop methods
+                                    of references do nothing. */
     }
     greet_with_references(&m1_again, &m2_again); // Note the '&'. Rust does not add '&' implicitly.
-
-
 
     /* Mutable references:- They provide 'unique', 'non-owning' access to data */
     let mut v1: Vec<i32> = vec![1, 2, 3];
     let num: &mut i32 = &mut v1[2];
-    // println!("{}", v1[0]); 
+    // println!("{}", v1[0]);
     /* Above line does not work, because taking a mutable reference blocks any access to the underlying data without
-       going through this reference. */
+    going through this reference. */
     *num += 1;
     println!("Third element is {}", *num);
     println!("Vector is now {:?}", v1); // The reference num is no longer live
 
-
     // Rust implicitly inserts dereferences and references
-    let x :Box<i32> = Box::new(-1); // x is a pointer on stack to the Box on heap (all variables live in stack)
+    let x: Box<i32> = Box::new(-1); // x is a pointer on stack to the Box on heap (all variables live in stack)
     let x_abs1 = i32::abs(*x); // Explicit dereference
     let x_abs2 = x.abs(); // Implicit deference
     assert_eq!(x_abs1, x_abs2); // This macro panics if the two values given to it are not equal
 
     // A simple example of a reference to a reference
-    let my_num :i32 = 5;
-    let my_ref :&i32 = &my_num;
-    let ref_to_ref :&&i32 = &my_ref;
+    let my_num: i32 = 5;
+    let my_ref: &i32 = &my_num;
+    let ref_to_ref: &&i32 = &my_ref;
     println!("Expecting 5, got {}", **ref_to_ref); // the *'s can be omitted, they wil be implicitly added
 
     let r: &Box<i32> = &x;
@@ -57,9 +54,9 @@ fn main() {
 
     let s = String::from("Hello");
     let s_len1 = str::len(&s); // explicit reference
-    let s_len2 = s.len(); // Implicit reference. The "." operator always creates a reference, to pass to the method. 
-    // Depending on the type of the base variable 's' and the expected type of the parameter,
-    // '.' could insert ampersands or stars automatically in front of the base variable. In this case &s would be passed.
+    let s_len2 = s.len(); // Implicit reference. The "." operator always creates a reference, to pass to the method.
+                          // Depending on the type of the base variable 's' and the expected type of the parameter,
+                          // '.' could insert ampersands or stars automatically in front of the base variable. In this case &s would be passed.
     assert_eq!(s_len1, s_len2);
 
     /*
@@ -77,26 +74,25 @@ fn main() {
     // answer.push_str(" world"); // NOT ALLOWED
     println!("Expecting Hello, got: {}", ans_ref1);
     /* Cannot mutate underlying data while a reference to it is live. In this case the mutation can't actually cause a problem,
-       unless the reference is passed to another thread (in which case data races can occur between the write (i.e., push_str) in the 
-       main thread and the read via the reference in the other thread).  */
+    unless the reference is passed to another thread (in which case data races can occur between the write (i.e., push_str) in the
+    main thread and the read via the reference in the other thread).  */
 
     let mut answer2 = String::from("Hello");
     let ans_ref2 = &answer2;
     let substr2 = &ans_ref2[0..2];
     // answer.push_str(" world"); // NOT ALLOWED
-    println!("Expecting He, got: {}", substr2);   
+    println!("Expecting He, got: {}", substr2);
     /* In this example, the string-slice substr2 could become a dangling pointer in case the push_str relocates
-       the underlying string in the heap. */
+    the underlying string in the heap. */
 
-    
     let mut answer3 = String::from("Hello");
     let substr3 = &answer3[0..2];
     let mut ans_ref3 = &mut answer3;
     ans_ref3.push_str(" world");
     // println!("Expecting He, got: {}", substr3); NOT ALLOWED, unless we comment out both lines above
     /* In this example, the mutation via the mutable reference is not allowed if we uncomment the println above,
-       since, a mutable reference and an immutable reference are live together. Note, if it was allowed, substr3 could
-       become a dangling pointer due to the mutation. */
+    since, a mutable reference and an immutable reference are live together. Note, if it was allowed, substr3 could
+    become a dangling pointer due to the mutation. */
 
     /*
       References change permissions.
@@ -107,78 +103,82 @@ fn main() {
     */
     let v3 = vec![1, 2, 3]; // v -> {R, W, O}
     let num = &v3[2]; // v3 -> {R}, referencing removed the write and own permission from v3, you cannot mutate/move v3 until num dies
-                            // num -> {R,O}, *num -> {R}
-                            // Note, one needs W permission on v3 to be able to mutate any element of v3. How this permission check happens
-                            // will be discussed later.
-    // let _v3a = v3; NOT ALLOWED, since reference num (which is treated as a reference to v3 itself, reason to be discussed later), is live
+                      // num -> {R,O}, *num -> {R}
+                      // Note, one needs W permission on v3 to be able to mutate any element of v3. How this permission check happens
+                      // will be discussed later.
+                      // let _v3a = v3; NOT ALLOWED, since reference num (which is treated as a reference to v3 itself, reason to be discussed later), is live
     println!("num: {}", num);
     // If an object is moved from one place to another by a copy statement, (like in chapter_4.rs), the source place loses all its permissions
 
     /*
       The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For
-      if such a move was allowed, after the move, the target struct (after the move) could get mutated or even get dropped later. 
-      This could 
+      if such a move was allowed, after the move, the target struct (after the move) could get mutated or even get dropped later.
+      This could
       cause any raw pointers in the original struct (to which references exist) to become dangling. Lack of
-      O permission means don't allow to be moved to another place. A place will get back its O permission when all references 
-      to the place (or to other locations reachable from the place) reach the end of their lifetimes (and the compiler requires the lifetimes of references
+      O permission means don't allow to be moved to another place. A place will get back its O permission when all references
+      to the place (or to other locations reachable from the place) reach the end of their lifetimes
+      (and the compiler requires the lifetimes of references
       to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped,
       the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically
       moves the actual param value to the formal param `self'. In other words, a value can be dropped
-      only when the owning place has 'O' permission. 
+      only when the owning place has 'O' permission.
     */
-    
     /*
-      Note that the compiler has to somehow conservatively track which places hold references to which other places. 
+      Note that the compiler has to somehow conservatively track which places hold references to which other places.
       This is challenging when reference variables are copied to other reference variables, etc.
       We do not discuss further how exactly this is done.
     */
-    
 
-    // TODO: Change Debug to Display.
-    #[derive(Debug)]
-    struct Sample2 {fl:i32, hl:i32}
-    #[derive(Debug)]
-    struct Sample1 {gl:Sample2, kl:i32}
+    // We move onto understanding references into structures
+    struct Sample2 {
+        fl: i32,
+        hl: i32,
+    }
+    struct Sample1 {
+        gl: Sample2,
+        kl: i32,
+    }
 
-    let  mut v = Sample1{gl:Sample2{fl:0,hl:3}, kl:1};
+    let mut v = Sample1 {
+        gl: Sample2 { fl: 0, hl: 3 },
+        kl: 1,
+    };
     let rf = &mut v.gl.fl; // Prefixes are v.gl and v
-    // v -> {}, v.gl -> {}, v.gl.fl -> {}, v.kl -> {R, W}
+                           // v -> {}, v.gl -> {}, v.gl.fl -> {}, v.gl.hl -> {O, W, R}, v.kl -> {O, R, W}
     // println!("v.gl is : {:?}", v.gl); // NOT ALLOWED
     let hf = &mut v.gl.hl;
-    /* 
+    /*
     let w = &v; // not allowed
-    println!("w.kl is {:?}", (*w).kl); 
+    println!("w.kl is {:?}", (*w).kl);
     */
-    println!("v.kl is {:?}", v.kl); // this is NOT considered a read of v followed by a read of v.kl. 
-                                    // One has to somehow consider it to be a direct read of the place v.kl.
+    println!("v.kl is expected to be 1, got: {}", v.kl); // this is NOT considered a read of v followed by a read of v.kl.
+                                                         // One has to somehow consider it to be a direct read of the place v.kl.
+                                                         // Note, we have no read permission to v itself.
     v.kl = 2;
-    println!("v.kl is {:?}", v.kl);
-    println!("rf = {rf:?}");
+    println!("v.kl is expected to be 2, got: {}", v.kl);
+    println!("*rf is expected to be 0, got: {}", *rf);
 
     // If the struct is thought of as a tree, and a mutable reference to a node is taken,
     // then you cannot take any ref either to the prefixes or to the descendants
-    // (you also lose R,W permissions).
+    // (you also lose R,W permissions to those places).
 
     // Explanation:- Parents aren't allowed to be referred because they can be used to
     // descend to the current node and mutate/read it. Siblings do not have any effect on the
     // current node and the current node has no effect on the siblings, and hence
     // mutation/reading can be allowed to them.
 
-
     // Similar to previous one, can think of this as a tree,
     let mut v4: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
     let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, O}, *num -> {R, W}, referencing removed all the permissions on v4
-    // taking a reference to a vector element results in calling the method 'index' or 'index_mut', which take a reference
-    // to the outermost Vec struct itself and keeps that reference as long as the returned reference (i.e., num) is live.
+                                    // taking a reference to a vector element results in calling the method 'index' or 'index_mut', which take a reference
+                                    // to the outermost Vec struct itself and keeps that reference as long as the returned reference (i.e., num) is live.
     *num += 1;
     // A fall out of the above restriction is that if you have an immutable reference  to a vector element, the vector
-    // itself becomes inaccessible for writing. The reason they do this is that by calling the push method etc. one can 
-    // end up re-allocating the buffer in heap and hence updating the raw pointer inside the struct that points to this buffer. 
+    // itself becomes inaccessible for writing. The reason they do this is that by calling the push method etc. one can
+    // end up re-allocating the buffer in heap and hence updating the raw pointer inside the struct that points to this buffer.
     // Or if you try to re-assign v4 entirely, the compiler would want to call the drop() method on the struct,
     // which would in turn want to de-allocate the heap buffer. Similarly, if we have  a mutable reference to an element of the vector,
     // no further reading of the vector is allowed while the reference is live.
-
-
 
     // The Borrow Checker finds permission violations
     // This code will not compile if this is uncommented
@@ -191,7 +191,7 @@ fn main() {
     let mut num = &v6[2]; // v4 -> {R}, num -> {R, W, O}, *num -> {R}
     num = &v6[2];
 
-    // Intro to lifetimes:- A reference has a lifetime, which is a range from its definition to its last use. 
+    // Intro to lifetimes:- A reference has a lifetime, which is a range from its definition to its last use.
     // NOTE: Permissions are returned to the primary place after the end of the reference's lifetime
     let mut my_string = String::from("hello world"); // my_string - {R, W, O}
     let s1 = &my_string; // my_string - {R}
@@ -211,11 +211,11 @@ fn main() {
     // DATA MUST OUTLIVE ALL ITS REFERENCES
     let s = String::from("Hello world"); // s -> {R, O}
     let s_ref = &s; // s -> {R}
-    // drop(s); // This explicit call to drop() is rejected by the borrow checker as s does not have the 'O' permission
-    // Note, in its implementation, the drop() function has `self` as its argument (not &self), so it basically
-    // moves the actual param value to the formal param `self'.
-    // Also, for the same reason, a function cannot return a reference to a value that is owned
-    // by a local variable of the function. 
+                    // drop(s); // This explicit call to drop() is rejected by the borrow checker as s does not have the 'O' permission
+                    // Note, in its implementation, the drop() function has `self` as its argument (not &self), so it basically
+                    // moves the actual param value to the formal param `self'.
+                    // Also, for the same reason, a function cannot return a reference to a value that is owned
+                    // by a local variable of the function.
     println!("{}", s_ref);
 }
 // Please go to chapter_10_3 after completing this, and then continue :)

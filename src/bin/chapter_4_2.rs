@@ -49,9 +49,7 @@ fn main() {
     let ans_ref1 = &answer1;
     // answer1.push_str(" world"); // NOT ALLOWED
     println!("Expecting Hello, got: {}", ans_ref1);
-    /* Cannot mutate underlying data while a reference to it is live. In this case the mutation can't actually cause a problem,
-    unless the reference is passed to another thread (in which case data races can occur between the write (i.e., push_str) in the
-    main thread and the read via the reference in the other thread).  */
+    /* Cannot mutate underlying data while a reference to it is live. In this case the mutation can't actually cause a problem, unless the reference is passed to another thread (in which case data races can occur between the write (i.e., push_str) in the main thread and the read via the reference in the other thread).  */
 
     let mut answer2 = String::from("Hello");
     let ans_ref2 = &answer2;
@@ -73,99 +71,71 @@ fn main() {
     /*
       A "place" is anything that can occur on the LHS of an assignment statement. In other words, it is an l-value.
       Examples: v, *v, v[1], etc.
-      The idea behind the Borrow Checker is that any place has 3 permissions
+      The idea behind how the Borrow Checker works is that any place has 3 *permissions*
       1. Read(R), 2. Write(W), 3. Own(O), [4. Flow(F)]
       Taking references changes the permissions.
     */
-    let v3 = vec![10, 20, 30]; // v3 -> {R, W, O}. v3 has all permissions immediately upon initiliazation.
+    let mut v3 = vec![10, 20, 30]; // v3 -> {R, W, O}. That is, v3 has all permissions immediately upon declaration.
     let num = &v3[2]; 
-                      // v3 -> {R}, num -> {R,O}, *num -> {R}.
-                      // Basically, referencing removed the write and own permission from v3, meaning you cannot mutate/move v3 until num dies.
-                      // Conceptually, taking a reference to a vector element results in calling the method 'index' on the vector, which takes a reference
-                      // to the outermost Vec struct itself and keeps that "borrow" of the vector alive as long as the returned reference (i.e., num) is live.
-                      // This borrow causes removal of W and O permissions on the vector. 
-                      // Note, one needs W permission on v3 to be able to mutate any element of v3. How this permission check happens
-                      // (via the index_mut method) will be discussed later.
+        /* Permissions at this point: v3 -> {R}, num -> {R,O}, *num -> {R} */
 
+    // v3.push(40);   NOT ALLOWED, since v3 does not have W permission
     // let _v3a = v3; NOT ALLOWED, since v3 does not have O permission
-    println!("Expecting 20, got: {}", v3[1]); // ok, since v3 still has R permission
-    println!("Expecting 30, got: {}", num);
-    println!("Expecting 20, got: {}", v3[1]); // v3 -> {R,W,O}, since num is no longer live
 
     /*
-      The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For
-      if such a move was allowed, after the move, the target struct (i.e., the target of the move) could get mutated or even get dropped later.
-      This could
-      cause any  pointers in the original struct (to which references exist) to become dangling. Lack of
-      O permission means don't allow to be moved to another place. A place will get back its O permission when all references
-      to the place (and to other locations reachable from the place) reach the end of their lifetimes
-      (and the compiler requires the lifetimes of references
-      to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped,
-      the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically
-      moves the actual param value to the formal param `self'. In other words, a value can be dropped
-      only when the owning place has 'O' permission.
+        Conceptually, taking a reference to a vector element results in calling the method 'index' on the vector, which  takes a reference to the outermost Vec struct itself and keeps this "borrow" of the vector alive as long as the returned reference (i.e., num) is live. This borrow causes removal of W and O permissions on the vector. 
+                    
+        Note, one needs W permission on v3 to be able to mutate any element of v3 (how this permission check happens (via the index_mut method) will be discussed later). The reason W permission is removed is that additions to the vector can move the entire vector in heap, which can make num a dangling pointer. Or if you try to re-assign v3 entirely to a new vector, the compiler would want to call the drop() method on the old value, which would in turn want to de-allocate the heap buffer. 
+
+        The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For if such a move was allowed, after the move, the target struct (i.e., the target of the move) could get mutated or even get dropped later. This could cause any  pointers in the original struct (to which references exist) to become dangling. Lack of O permission means don't allow to be moved to another place. A place will get back its O permission when all references to the place (and to other locations reachable from the place) reach the end of their lifetimes (and the compiler requires the lifetimes of references to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped, the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically moves the actual param value to the formal param `self'. In other words, a value can be dropped only when the owning place has 'O' permission.
+
+        Note, *num has no O permission, and this means don't drop the value in  *num when num goes out of scope. Any reference is basically a non-owning pointer. 
+    
+        Note that the compiler has to somehow conservatively track which places hold references to which other places, and till what point the borrows are live. This is challenging when reference variables are copied to other reference variables, etc. We do not discuss further how exactly this is done.
     */
-    /*
-      Note that the compiler has to somehow conservatively track which places hold references to which other places.
-      This is challenging when reference variables are copied to other reference variables, etc.
-      We do not discuss further how exactly this is done.
+    println!("Expecting 20, got: {}", v3[1]); // ok, since v3 still has R permission
+    println!("Expecting 30, got: {}", *num);  // ok, since num and *num have R permission
+                                              // here, the permissions are v3 -> {R,W,O}, since num is no longer live
+    v3[1] = 19;
+
+    /* 
+      A note about programming practice: Why save a reference to v3[2] in num (and pass this reference to wherever it will be dereferenced), rather than just storing the index 2 in num and referring v3[num] later? Well, holding on to the reference prevents (unintended) mutations to v3 that might insert additional elements before position 2 or truncate the vector to lose position 2 onwards. 
     */
+    /*  
+        Vec has a method split_at_mut, which returns two mutable array slices representing two disjoint partitions of the vector. This allows concurrent readers and writes, or even two concurrent writers, but to disjoint parts of the vector. 
+    */
+
 
     let mut v4: Vec<i32> = vec![11, 21, 31]; // v -> {R, W, O}
-    let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, W, O}, *num -> {R, W}
-                                    // Conceptually, taking a mutable reference to a vector element results in calling the method 'index_mut' on the vector, 
-                                    // which takes a mutable reference
-                                    // to the outermost Vec struct itself and keeps that "borrow" of the vector alive as long as the returned reference (i.e., num) is live.
+    let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, W, O}, *num -> {R, W}       
+    /*
+        Conceptually, taking a mutable reference to a vector element results in calling the method 'index_mut' on the vector, which takes a mutable reference to the outermost Vec struct itself and keeps that "borrow" of the vector alive as long as the returned reference (i.e., num) is live.
+    */
+    // let _t4 = &v4[0];  NOT ALLOWED
     *num += 1;
-    // A fall out of the above restriction is that if you have an immutable reference  to a vector element, the vector
-    // itself becomes inaccessible for writing. The reason they do this is that by calling the push method etc. one can
-    // end up re-allocating the buffer in heap and hence updating the raw pointer inside the struct that points to this buffer.
-    // Or if you try to re-assign v4 entirely, the compiler would want to call the drop() method on the struct,
-    // which would in turn want to de-allocate the heap buffer. Similarly, if we have  a mutable reference to an element of the vector,
-    // no further reading of the vector is allowed while the reference is live.
-    println!("Expecting 21, got: {}", v4[1]); // v3 -> {R,W,O}, since num is no longer live
+    println!("Expecting 32, got: {}", v4[2]); // v3 -> {R,W,O}, since num is no longer live
 
 
-
-    // The Borrow Checker finds permission violations
-    // This code will not compile if this is uncommented
-    let v5: Vec<i32> = vec![1, 2, 3];
-    let num: &i32 = &v5[2];
-    // v5.push(4); // This line is a violation as v5 does not have the W permission
-    println!("Third element is {}", *num);
-
-    let v6: Vec<i32> = vec![1, 2, 3]; // v -> {R, W, O}
+    let v6: Vec<i32> = vec![1, 2, 3]; // v -> {R, O}
     let mut num = &v6[2]; // v4 -> {R}, num -> {R, W, O}, *num -> {R}
+    // can re-assign num, but cannot write to *num (because v6 is not marked mutable)
     num = &v6[2];
 
-    // Intro to lifetimes:- A reference has a lifetime, which is a range from its definition to its last use.
-    // NOTE: Permissions are returned to the primary place after the end of the reference's lifetime
-    let mut my_string = String::from("hello world"); // my_string - {R, W, O}
-    let s1 = &my_string; // my_string - {R}
-    let s2 = &my_string; // my_string - {R}
-    println!("s1: {}, s2: {}", s1, s2);
-    // my_string - {R, W, O}
-    let s3 = &mut my_string; // my_string - {}
-    s3.push('!');
-    println!("s3: {}", *s3);
-    // my_string - {R, W, O}
+    /* A more detailed note about lifetimes:- Any reference has a *lifetime*, which is a range of lines of code from its definition to its last use. The reference (and the borrow it represents) is said to  be *live* or *active* over this lifetime. Permissions are returned to the primary place (from which the reference has borrowed) after the end of the reference's lifetime. 
 
-    // Notice that when s3 is declared, s1 and s2 are no longer live.
-    // Declare s3 above the first println statement to see the compiler error.
-
-    // Go through the non-lexical lifetimes example in the Brown Rust book. Search for fn ascii_capitalize.
+    The range of lines can in general be non-contiguous also, which is called non-lexical lifetimes. See fn ascii_capitalize in Chap. 4.2 in the Brown university copy of the Rust book.
+    */
 
     // DATA MUST OUTLIVE ALL ITS REFERENCES
-    let s = String::from("Hello world"); // s -> {R, O}
-    let s_ref = &s; // s -> {R}
-                    // drop(s); // This explicit call to drop() is rejected by the borrow checker as s does not have the 'O' permission
-                    // Note, in its implementation, the drop() function has `self` as its argument (not &self), so it basically
-                    // moves the actual param value to the formal param `self'.
-                    // Also, for the same reason, a function cannot return a reference to a value that is owned
-                    // by a local variable of the function.
-    println!("{}", s_ref);
+    let r7;
+    {
+        let t7 = 0;
+        r7 = &t7;
+        let _u7 = *r7;
+    }
+    //let s7 = *r7; NOT ALLOWED. The reference's lifetime is not allowed to go beyond the scope of the data it refers to.
 
-    // We move onto understanding references into structures
+    // We now move onto understanding references into structures
     struct Sample2 {
         fl: i32,
         hl: i32,
@@ -202,6 +172,22 @@ fn main() {
     // descend to the current node and mutate/read it. Siblings do not have any effect on the
     // current node and the current node has no effect on the siblings, and hence
     // mutation/reading can be allowed to them.
+
+      /*  A note on Boxes.
+
+        Similar to vectors, a Box normally owns the object in the heap that it points to. Hence,  when a Box is dropped, the heap object gets de-allocated, and additionally, recursive calls to .drop() are made corresponding to other Boxes or other structs that are declared as fields within the heap object. However, the compiler treats Box alone specially even though it is just like a user-defined type. The compiler allows the data in the heap object pointed to by a Box to be MOVEd out by an assignment statement, such as:
+
+          let v = *b;   // entire heap object is moved out
+          let w = b.f;  // value in f field of the heap object  alone is moved out
+
+        So, when a box is dropped, the value in the heap object (or in a field of the heap object) is dropped by the compiler only if this value is still being owned by the Box. This tracking is taken care of specially by the compiler, as opposed to the drop() method in the Box taking care of this, as the drop() cannot know which parts of the object have been moved out and which ones not. Intuitively, the compiler, using special-casing, treats the struct in the heap to which the Box is pointing as if that struct is a local variable residing in the stack itself. 
+        
+        The same is not true about Vectors (and not true about any other user-defined type that has implemented the Deref trait). If v is a vector, then:
+          let t = v[0];
+        is not allowed unless the elements of v implement the copy trait. It is allowed to say:
+          let t = &v[0];
+          let t1 = &v[m..n];
+    */
 
     // Following are examples how to use references syntactically. 
     // This is kind of orthogonal to the concept behind references and permissions.

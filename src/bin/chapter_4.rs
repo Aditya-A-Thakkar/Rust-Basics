@@ -17,11 +17,30 @@ fn main() {
            The from() method allocates a string in the heap and initializes it from the
            literal (which is itself immutable and lives in the global data space. */
         println!("{}", s);
-    } 
-    /*  s goes out of scope here, and hence the compiler places here a call to the "drop" method of the String, by
-        basically inserting a call s.drop(). The drop() method of String de-allocates the string in the heap.
-        Note the co-operation between the compiler and the implementation of String::drop() (in the library)
-        to clean up garbage without programmer intervention.
+    
+        /*  
+            s goes out of scope here, and hence the compiler places here a call to the "drop" method of the String, by basically inserting a call s.drop(). The drop() method of String de-allocates the string in the heap. Note the co-operation between the compiler and the implementation of String::drop() (in the library) to clean up garbage without programmer intervention.
+        */
+    }
+
+
+    /*  Further notes about dropping:
+
+        1.
+        If we re-assign a variable, such as:
+          let s = String::from("Hello");
+          s = String::from("World");
+        Then also, the compiler places a call to s.drop() just before the re-assignment.
+
+        2. 
+        If s is of a user-defined struct type, either the programmer-provided drop method for the type will be called on s when s leaves the scope, or a compiler-provided default drop method will be called on it if there is no programmer-provided drop method. The default method does nothing other than recursively call the drop method on nested values within the value in s. 
+        
+        If the user-defined type contains raw pointers as fields, the developer better provide a drop method for the type, and this  method better explicitly de-allocate the memory pointed to by these raw pointers. Rust never automatically de-allocates memory pointed to by raw pointers. 
+ 
+
+        3. A Vec is just an instance of a user-defined struct (but it's in the library). When a Vec variable (i.e., a vector) goes out of scope, the drop() method of the Vec is called, and this not only de-allocates the space in heap occupied by the vector, but also calls the .drop() method on each element of the vector. This triggers recursive de-allocations of other vectors/boxes that are contained within each element. 
+
+        When a Box variable goes of scope, something similar happens normally. One can think of the Box as a single-element Vec. However, Boxes have some extra capabilities that can affect this dropping behavior. We talk about this more in chapter_4_2.rs.        
     */
 
     /* Let us look at the Rule number 2.
@@ -113,6 +132,8 @@ fn main() {
     println!("{}", concat_str);
     println!("{}", r_str);
     // println!("{}", l_str); // ERROR!!!
+
+  
 }
 
 fn do_nothing(mut first_parameter: String) {

@@ -132,8 +132,9 @@ fn main() {
     println!("{}", concat_str);
     println!("{}", r_str);
     // println!("{}", l_str); // ERROR!!!
-
-  
+    // The "+  operator is implemented by String by implementing the add() function of the Add trait.
+    // The signature of the add function is: fn add(self, rhs: Rhs) -> Self::Output;
+    // Note, the parameter "self" means the lhs operand is MOVEd into this function.
 }
 
 fn do_nothing(mut first_parameter: String) {

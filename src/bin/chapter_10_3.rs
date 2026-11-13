@@ -8,19 +8,17 @@ fn main() {
         let x = 5;
         r = &x;
     }
-    // println!("*r = {}", *r);
-    // Uncomment the line above and see the compiler error
-    // REASON: x has to be dropped when it goes out of scope since x is not a reference. But if r is live after line 10,
-    // x would not have O permission, and hence would not be droppable. This can't be allowed, since every value must
-    // be dropped when its owning place goes out of scope, in order to free any memory pointed to by fields within the value.
-    // Hence, long story short, the compiler disallows a reference to a value or a part of a value to be live
-    // after the place that owns the value goes out of scope. In other words,  DATA MUST OUTLIVE ALL REFERENCES TO IT.
+    // println!("*r = {}", *r); // compile error if uncommented
+    
+    /*
+    REASON: DATA MUST OUTLIVE ALL REFERENCES TO IT.
+    */
 
 
     // Lifetime Annotations are syntactically similar to type parameters. 
     /* The annotations below serve two purposes:
         1. It tells the compiler to check after each call-site to longest that the returned reference is not used
-           beyond the life of the shorter-lived data among the two data items referred to by the two actual parameters.
+           beyond the life of the shorter-lived data among the two data items referred to by the two given actual parameters.
         2. As long as the returned reference is live after the call-site, both the actual parameter references 
            (i.e., borrows) are considered active/live.
         

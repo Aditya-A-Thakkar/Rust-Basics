@@ -83,15 +83,19 @@ fn main() {
     // let _v3a = v3; NOT ALLOWED, since v3 does not have O permission
 
     /*
-        Conceptually, taking a reference to a vector element results in calling the method 'index' on the vector, which  takes a reference to the outermost Vec struct itself and keeps this "borrow" of the vector alive as long as the returned reference (i.e., num) is live. This borrow causes removal of W and O permissions on the vector. 
+        Conceptually, taking a reference to a vector's element results in calling the method 'index' on the vector, which  takes a reference to the  Vec struct (in stack) itself and keeps this "borrow" of the vector alive as long as the returned reference (i.e., num above) is live. This borrow causes removal of W and O permissions on the vector v3. Basically, taking any reference (mutable or immutable) to a variable/place removes O permission on that variable.
                     
-        Note, one needs W permission on v3 to be able to mutate any element of v3 (how this permission check happens (via the index_mut method) will be discussed later). The reason W permission is removed is that additions to the vector can move the entire vector in heap, which can make num a dangling pointer. Or if you try to re-assign v3 entirely to a new vector, the compiler would want to call the drop() method on the old value, which would in turn want to de-allocate the heap buffer. 
+        Note, one needs W permission on v3 to be able to mutate any element of v3 (this permission check happens via the index_mut method). The reason W permission is removed when one takes an immutable reference is that pushes into the vector can move the entire vector in heap, which can make the immutable reference (i.e., num) a dangling pointer. Or if you try to re-assign v3 entirely to a new vector, the compiler would want to call the drop() method on the old value, which would in turn want to de-allocate the heap buffer. 
 
-        The O permission exists to prevent a move of the struct to which (or to a sub-struct of which) another reference exists. For if such a move was allowed, after the move, the target struct (i.e., the target of the move) could get mutated or even get dropped later. This could cause any  pointers in the original struct (to which references exist) to become dangling. Lack of O permission means don't allow to be moved to another place. A place will get back its O permission when all references to the place (and to other locations reachable from the place) reach the end of their lifetimes (and the compiler requires the lifetimes of references to be a subset of the lifetime of the main struct).  Note, when a value is to be dropped, the compiler will call the drop() function, which  has `self` as its argument (not &self), so it basically moves the actual param value to the formal param `self'. In other words, a value can be dropped only when the owning place has 'O' permission.
+        The O permission exists to prevent a MOVE of a value to which (or to a portion of which) a reference exists from its original place/variable to another place/variable. For if such a move was allowed, then after the move, the target variable (i.e., the target of the move) could get mutated or even get dropped later. This could cause any  pointers within the original value/struct (to which references exist) to become dangling. Lack of O permission on a variable means don't allow it to be MOVEd to another place and don't drop it when it hits the end of its scope. A place will get back its O permission when all references to the value in the place (and all references to other locations reachable from the value in the place) reach the end of their lifetimes. (And separately, the compiler checks that the lifetimes of these references to end before the scope of the place itself.)  
 
         Note, *num has no O permission, and this means don't drop the value in  *num when num goes out of scope. Any reference is basically a non-owning pointer. 
     
         Note that the compiler has to somehow conservatively track which places hold references to which other places, and till what point the borrows are live. This is challenging when reference variables are copied to other reference variables, etc. We do not discuss further how exactly this is done.
+
+        All permissions on a variable/place that were removed because a reference was taken are returned when that reference's lifetime is over (unless other references to that same variable/place are still live).
+
+        Also  note that to take an immutable ref to  a place or to read a place at a program point, the place must have R permission just before this point. Analogously, to take a mutable ref to a place or to mutate a place at a program point, the place must have W permission just before this point.
     */
     println!("Expecting 20, got: {}", v3[1]); // ok, since v3 still has R permission
     println!("Expecting 30, got: {}", *num);  // ok, since num and *num have R permission
@@ -106,10 +110,10 @@ fn main() {
     */
 
 
-    let mut v4: Vec<i32> = vec![11, 21, 31]; // v -> {R, W, O}
-    let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, W, O}, *num -> {R, W}       
+    let mut v4: Vec<i32> = vec![11, 21, 31]; // v4 -> {R, W, O}
+    let num: &mut i32 = &mut v4[2]; // v4 -> {}, num -> {R, O}, *num -> {R, W}       
     /*
-        Conceptually, taking a mutable reference to a vector element results in calling the method 'index_mut' on the vector, which takes a mutable reference to the outermost Vec struct itself and keeps that "borrow" of the vector alive as long as the returned reference (i.e., num) is live.
+        Conceptually, taking a mutable reference to a vector element results in calling the method 'index_mut' on the vector, which takes a mutable reference to the  Vec struct itself and keeps that "borrow" of the vector alive as long as the returned reference (i.e., num) is live. This time, in addition to v4 losing W and O permissions (for the same reason as with v3 above), even the R permission on v4 is lost, because the reference num is a mutable reference.
     */
     // let _t4 = &v4[0];  NOT ALLOWED
     *num += 1;
@@ -118,15 +122,15 @@ fn main() {
 
     let v6: Vec<i32> = vec![1, 2, 3]; // v -> {R, O}
     let mut num = &v6[2]; // v4 -> {R}, num -> {R, W, O}, *num -> {R}
-    // can re-assign num, but cannot write to *num (because v6 is not marked mutable)
+    // can re-assign num, but cannot write to *num (because v6 is not marked mutable, due to which num is a mutable reference)
     num = &v6[2];
 
-    /* A more detailed note about lifetimes:- Any reference has a *lifetime*, which is a range of lines of code from its definition to its last use. The reference (and the borrow it represents) is said to  be *live* or *active* over this lifetime. Permissions are returned to the primary place (from which the reference has borrowed) after the end of the reference's lifetime. 
+    /* A more detailed note about lifetimes:- Any reference has a *lifetime*, which is a set  of lines of code from its definition to its last use. The reference (and the borrow it represents) is said to  be *live* or *active* over this lifetime. Permissions are returned to the primary place (from which the reference has borrowed) after the end of the reference's lifetime. 
 
     The range of lines can in general be non-contiguous also, which is called non-lexical lifetimes. See fn ascii_capitalize in Chap. 4.2 in the Brown university copy of the Rust book.
     */
 
-    // DATA MUST OUTLIVE ALL ITS REFERENCES
+    // Another rule: DATA MUST OUTLIVE ALL ITS REFERENCES
     let r7;
     {
         let t7 = 0;
@@ -164,14 +168,14 @@ fn main() {
     println!("v.kl is expected to be 2, got: {}", v.kl);
     println!("*rf is expected to be 0, got: {}", *rf);
 
-    // If the struct is thought of as a tree, and a mutable reference to a node is taken,
-    // then you cannot take any ref either to the prefixes or to the descendants
-    // (you also lose R,W permissions to those places).
+    /*
+    If a struct is thought of as a tree, and a mutable reference to a node somewhere in the tree is taken (e.g., v.gl.fl), then going forward you cannot take any ref either to the prefixes (i.e., ancestors) or to any of the descendants of this node. (This is achieved by taking away R,W permissions to those nodes/places). Note, siblings/cousins/nephews/nieces of the node are not affected. The same condition is a pre-requisite to be able to take the mutable ref to the node in the first place: there should be no existing  references to its ancestors or descendents.
+
+    Taking an immutable reference to a node in the tree is analogous, but the requirements are weaker, in the sense that concurrent other immutable references are allowed.
+    */
 
     // Explanation:- Parents aren't allowed to be referred because they can be used to
-    // descend to the current node and mutate/read it. Siblings do not have any effect on the
-    // current node and the current node has no effect on the siblings, and hence
-    // mutation/reading can be allowed to them.
+    // descend to the current node and mutate/read it. 
 
       /*  A note on Boxes.
 
